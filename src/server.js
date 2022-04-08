@@ -17,8 +17,16 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`);
 const httpServer = http.createServer(app);  //http 서버 생성
 const wsServer = SocketIO(httpServer);  //socket io 서버 생성
 
+
 wsServer.on("connection", (socket) => {
-    console.log(socket);
+    socket.onAny((event) => {
+        console.group(`Socket Event: ${event}`)
+    });
+    socket.on("enter_room", (roomName, done) => {
+        socket.join(roomName);
+        done();
+
+    });
 });
 
 //const wss = new WebSocket.Server({ server });   //{server}를 넣어 http 위에 webSocket서버 생성(동일 port사용)
