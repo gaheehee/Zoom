@@ -19,15 +19,25 @@ const wsServer = SocketIO(httpServer);  //socket io 서버 생성
 
 
 wsServer.on("connection", (socket) => {
+    //wsServer.socketsJoin("announcement");   //소켓이 연결될 때 모든 socket이 announcement 방에 입장
+    socket["nickname"] = "Anon";
     socket.onAny((event) => {
         console.group(`Socket Event: ${event}`)
     });
     socket.on("enter_room", (roomName, done) => {
         socket.join(roomName);
         done();
-        socket.to(roomName).emit("welcome");
+        socket.to(roomName).emit("welcome", socket.nickname);
 
     });
+    socket.on("disconnecting", () => {
+        socket.rooms.forEach((room) => socket.to(room).emit("bye", socket.nickname));
+    });
+    socket.on("new_message", (msg, room, done) => {
+        socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
+        done();
+    });
+    socket.on("nickname", nickname => (socket["nickname"] = nickname));
 });
 
 //const wss = new WebSocket.Server({ server });   //{server}를 넣어 http 위에 webSocket서버 생성(동일 port사용)
