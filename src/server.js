@@ -32,6 +32,11 @@ function publicRooms(){ //sids:private, rooms:public, private
     return publicRooms;
 }
 
+function countRoom(roomName){
+    return wsServer.sockets.adapter.rooms.get(roomName)?.size;
+}
+
+
 wsServer.on("connection", (socket) => {
     //wsServer.socketsJoin("announcement");   //소켓이 연결될 때 모든 socket이 announcement 방에 입장
     socket["nickname"] = "Anon";
@@ -42,11 +47,11 @@ wsServer.on("connection", (socket) => {
     socket.on("enter_room", (roomName, done) => {
         socket.join(roomName);
         done();
-        socket.to(roomName).emit("welcome", socket.nickname);   //하나의 socket에 msg 보냄
+        socket.to(roomName).emit("welcome", socket.nickname, countRoom(roomName));   //하나의 socket에 msg 보냄
         wsServer.sockets.emit("room_change", publicRooms());    //모든 socket에 msg 보냄
     });
     socket.on("disconnecting", () => {
-        socket.rooms.forEach((room) => socket.to(room).emit("bye", socket.nickname));
+        socket.rooms.forEach((room) => socket.to(room).emit("bye", socket.nickname, countRoom(room)-1));
     });
     socket.on("disconnect", () => {
         wsServer.sockets.emit("room_change", publicRooms());
