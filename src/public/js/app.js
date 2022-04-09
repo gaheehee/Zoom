@@ -64,3 +64,16 @@ socket.on("bye", (left) => {
 });
 
 socket.on("new_message", (msg) => { addMessage(msg); });
+
+socket.on("room_change", (rooms) => {   //empty array오면 아무것도 안함 -> if문 추가
+    const roomList = welcome.querySelector("ul");
+    roomList.innerHTML = "";
+    if(rooms.length === 0){
+        return;
+    }
+    rooms.forEach(room => {
+        const li = document.createElement("li");
+        li.innerText = room;
+        roomList.append(li);
+    })
+})

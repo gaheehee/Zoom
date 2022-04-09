@@ -17,21 +17,39 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`);
 const httpServer = http.createServer(app);  //http 서버 생성
 const wsServer = SocketIO(httpServer);  //socket io 서버 생성
 
+function publicRooms(){ //sids:private, rooms:public, private
+    const {sockets: {
+        adapter: {
+            sids, rooms},
+        },
+    } = wsServer;
+    const publicRooms = [];
+    rooms.forEach((_, key) => {
+        if (sids.get(key) === undefined){
+            publicRooms.push(key);
+        }
+    })
+    return publicRooms;
+}
 
 wsServer.on("connection", (socket) => {
     //wsServer.socketsJoin("announcement");   //소켓이 연결될 때 모든 socket이 announcement 방에 입장
     socket["nickname"] = "Anon";
     socket.onAny((event) => {
+        console.log(wsServer.sockets.adapter);
         console.group(`Socket Event: ${event}`)
     });
     socket.on("enter_room", (roomName, done) => {
         socket.join(roomName);
         done();
-        socket.to(roomName).emit("welcome", socket.nickname);
-
+        socket.to(roomName).emit("welcome", socket.nickname);   //하나의 socket에 msg 보냄
+        wsServer.sockets.emit("room_change", publicRooms());    //모든 socket에 msg 보냄
     });
     socket.on("disconnecting", () => {
         socket.rooms.forEach((room) => socket.to(room).emit("bye", socket.nickname));
+    });
+    socket.on("disconnect", () => {
+        wsServer.sockets.emit("room_change", publicRooms());
     });
     socket.on("new_message", (msg, room, done) => {
         socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
